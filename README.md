@@ -13,8 +13,6 @@
   </a>
 </div>
 
-![Celestial types preview](preview.mp4)
-
 WebGL/Canvas 2D procedural celestial body renderer. Generates planets, stars, black holes, galaxies, and nebulae in real-time with deterministic seeded output.
 
 Built for [Abyssal Rift](https://abyssalrift.eluvade.com) — a 2D space exploration MMORPG.
