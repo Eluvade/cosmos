@@ -193,6 +193,14 @@ src/
 
 Requires WebGL 1.0. Works in all modern browsers.
 
+## Credits
+
+This project builds on the work of several talented creators:
+
+- **[Deep-Fold](https://github.com/Deep-Fold)** — Planet shaders ported from [PixelPlanets](https://github.com/Deep-Fold/PixelPlanets) (Godot → WebGL)
+- **[Cas van den Elzen](https://codepen.io/cas-van-den-elzen)** ([@cas-van-den-elzen](https://codepen.io/cas-van-den-elzen)) — Black hole renderer based on [this CodePen](https://codepen.io/cas-van-den-elzen/pen/MWLNEoz)
+- **[Sophia / Fractal Kitty](https://fractalkitty.com)** ([@fractalkitty](https://mathstodon.xyz/@fractalkitty)) — Nebula renderer based on [this CodePen](https://codepen.io/fractalkitty/pen/qBxeoLZ)
+
 ## License
 
 [MIT](LICENSE)
