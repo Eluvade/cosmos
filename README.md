@@ -2,7 +2,7 @@
 
 WebGL/Canvas 2D procedural celestial body renderer. Generates planets, stars, black holes, galaxies, and nebulae in real-time with deterministic seeded output.
 
-Built for [Abyssal Rift](https://github.com/Eluvade) — a 2D space exploration MMORPG.
+Built for [Abyssal Rift](https://abyssalrift.eluvade.com) — a 2D space exploration MMORPG.
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![npm](https://img.shields.io/npm/v/@eluvade/cosmos)
