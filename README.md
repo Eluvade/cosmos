@@ -1,4 +1,19 @@
-# @eluvade/cosmos
+<p align="center">
+  <a href="https://abyssalrift.eluvade.com/">
+    <img alt="Cosmos preview" title="Cosmos" src="./preview.gif"/>
+  </a>
+</p>
+
+<h1 align="center">Cosmos</h1>
+<p align="center">@eluvade/cosmos</p>
+
+<div align="center">
+  <a href="https://eluvade.com/">
+    <img alt="Developer Logo" title="Bunny Eluvade" src="https://avatars.githubusercontent.com/u/32546052?v=4" width="66">
+  </a>
+</div>
+
+![Celestial types preview](preview.mp4)
 
 WebGL/Canvas 2D procedural celestial body renderer. Generates planets, stars, black holes, galaxies, and nebulae in real-time with deterministic seeded output.
 
