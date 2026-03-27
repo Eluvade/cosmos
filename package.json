@@ -1,0 +1,38 @@
+{
+  "name": "@eluvade/cosmos",
+  "version": "1.0.0",
+  "description": "WebGL/Canvas 2D procedural celestial body renderer. Planets, stars, black holes, galaxies, and nebulae.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "webgl",
+    "procedural",
+    "planet",
+    "star",
+    "galaxy",
+    "nebula",
+    "pixel-art",
+    "shader",
+    "celestial",
+    "space",
+    "generator"
+  ],
+  "author": "Eluvade",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Eluvade/cosmos.git"
+  },
+  "homepage": "https://github.com/Eluvade/cosmos",
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
