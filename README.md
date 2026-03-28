@@ -20,6 +20,8 @@ Built for [Abyssal Rift](https://abyssalrift.eluvade.com) — a 2D space explora
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![npm](https://img.shields.io/npm/v/@eluvade/cosmos)
 
+**[Live Demo](https://eluvade.github.io/cosmos/examples/)**
+
 ## Features
 
 - **12 celestial types**: Terrain (wet/dry), Aquatic, Barren, Gas Giant (plain/ringed), Molten, Ice, Star, Black Hole, Galaxy, Nebula
