@@ -54,7 +54,7 @@ await gen.precompile();
 // Render a star
 const canvas = gen.render({
   type: CelestialType.Star,
-  seed: 42,
+  seed: 9000,
   resolution: 256,
 }, 0);
 
@@ -75,7 +75,7 @@ Nebulae use Canvas 2D (static, rendered once):
 ```ts
 import { renderNebula } from '@eluvade/cosmos';
 
-const canvas = renderNebula(42, 512);
+const canvas = renderNebula(9000, 512);
 document.body.appendChild(canvas);
 ```
 
@@ -166,7 +166,7 @@ Override any color slot by name:
 ```ts
 gen.render({
   type: CelestialType.Star,
-  seed: 42,
+  seed: 9000,
   colors: {
     star1: [0.2, 0.5, 1.0, 1],  // RGBA [0-1]
     star2: [0.1, 0.3, 0.8, 1],
