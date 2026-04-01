@@ -66,18 +66,25 @@ const INTERNAL_RES = 900;
  * @param colors Optional color overrides.
  * @returns HTMLCanvasElement with the rendered nebula.
  */
+/** Create a canvas that works in both main thread and Web Workers. */
+function makeCanvas(size: number): HTMLCanvasElement | OffscreenCanvas {
+  if (typeof document === 'undefined') return new OffscreenCanvas(size, size);
+  const el = document.createElement('canvas');
+  el.width = size;
+  el.height = size;
+  return el;
+}
+
 export function renderNebula(
   seed: number,
   size = 512,
   colors?: NebulaColors,
-): HTMLCanvasElement {
+): HTMLCanvasElement | OffscreenCanvas {
   const rng = new SeededRNG(seed);
   const c = INTERNAL_RES;
 
-  const renderCanvas = document.createElement('canvas');
-  renderCanvas.width = c;
-  renderCanvas.height = c;
-  const ctx = renderCanvas.getContext('2d')!;
+  const renderCanvas = makeCanvas(c);
+  const ctx = renderCanvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
   // --- Drawing helpers ---
 
@@ -203,10 +210,8 @@ export function renderNebula(
 
   // Scale to requested output size
   if (size === c) return renderCanvas;
-  const outCanvas = document.createElement('canvas');
-  outCanvas.width = size;
-  outCanvas.height = size;
-  const outCtx = outCanvas.getContext('2d')!;
-  outCtx.drawImage(renderCanvas, 0, 0, size, size);
+  const outCanvas = makeCanvas(size);
+  const outCtx = outCanvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  outCtx.drawImage(renderCanvas as CanvasImageSource, 0, 0, size, size);
   return outCanvas;
 }

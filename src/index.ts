@@ -169,7 +169,7 @@ export class CelestialGenerator {
    * @param time   Animation time in seconds.
    * @returns The canvas element containing the rendered result.
    */
-  render(params: CelestialParams, time: number): HTMLCanvasElement {
+  render(params: CelestialParams, time: number): HTMLCanvasElement | OffscreenCanvas {
     const gl = this.gl;
     const res = params.resolution || 512;
     const type = params.type;

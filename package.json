@@ -1,6 +1,6 @@
 {
   "name": "@eluvade/cosmos",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WebGL/Canvas 2D procedural celestial body renderer. Planets, stars, black holes, galaxies, and nebulae.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
