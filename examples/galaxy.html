@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmos — Galaxy</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: #08070b;
+        color: #e8e6ee;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+    .mono { font-family: 'Cascadia Mono', Consolas, monospace; }
+    .eyebrow {
+        font-family: 'Cascadia Mono', Consolas, monospace;
+        font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #6f6a86;
+    }
+    .controls {
+        display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+        padding: 16px; border: 1px solid #1e1c28; border-radius: 10px; background: #0c0b11;
+    }
+    .controls label { font-size: .82rem; color: #a6a1b8; display: flex; align-items: center; gap: 8px; }
+    .controls input[type=number] {
+        background: #16141f; color: #e8e6ee; border: 1px solid #2a2735;
+        padding: 5px 9px; border-radius: 5px; width: 92px; font-family: inherit;
+    }
+    .controls input[type=range] { width: 130px; accent-color: #658be0; }
+    .controls button {
+        background: #1d1a2c; color: #c8ddff; border: 1px solid #322e45;
+        padding: 7px 16px; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: .82rem;
+    }
+    .controls button:hover { background: #292540; }
+    .val { color: #c8ddff; min-width: 34px; display: inline-block; }
+    .hero { display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start; }
+    canvas { display: block; border-radius: 12px; background: #05050a; }
+    .grid { display: flex; flex-wrap: wrap; gap: 14px; }
+    .cell { display: flex; flex-direction: column; gap: 6px; }
+    .cell canvas { border-radius: 9px; width: 200px; height: 200px; }
+    .meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #6f6a86;
+            font-family: 'Cascadia Mono', Consolas, monospace; letter-spacing: .04em; }
+    .swatches { display: flex; gap: 3px; }
+    .swatches i { width: 100%; height: 9px; border-radius: 2px; flex: 1; }
+    h1 { font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+    p.lede { font-size: 14px; line-height: 1.55; color: #a6a1b8; max-width: 46ch; }
+    .legend { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 18px;
+              font-family: 'Cascadia Mono', Consolas, monospace; font-size: 11.5px; color: #a6a1b8; }
+    .legend div { display: flex; align-items: center; gap: 8px; }
+    .legend i { width: 13px; height: 13px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+    <label>Seed <input type="number" id="seed" value="9000"></label>
+    <label>Color variation <input type="range" id="variation" min="0" max="1" step="0.05" value="0.35"><span class="val mono" id="variationVal">0.35</span></label>
+    <label>Incl min <input type="range" id="inclMin" min="0" max="80" step="1" value="12"><span class="val mono" id="inclMinVal">12°</span></label>
+    <label>Incl max <input type="range" id="inclMax" min="0" max="80" step="1" value="74"><span class="val mono" id="inclMaxVal">74°</span></label>
+    <label>Speed <input type="range" id="speed" min="0" max="1" step="0.01" value="0.35"><span class="val mono" id="speedVal">0.35</span></label>
+    <button id="randomSeed">Random seed</button>
+    <button id="toggle">Pause</button>
+</div>
+
+<div class="hero">
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <canvas id="hero" width="512" height="512" style="width:512px; height:512px;"></canvas>
+        <div class="meta" style="width:512px;">
+            <span id="heroSeed">seed</span>
+            <span id="heroBasin">basin</span>
+            <span id="heroIncl">inclination</span>
+        </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:460px;">
+        <div style="display:flex; flex-direction:column; gap:9px;">
+            <div class="eyebrow">CelestialType.Galaxy</div>
+            <h1>Grand design, tilted</h1>
+            <p class="lede">Density-wave crests sweeping inward, a spheroidal bulge that holds its
+            shape as the disc tilts, inclination drawn per seed from a range you set, and a palette
+            derived from a seeded region of colour space.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+            <div class="eyebrow">Palette for this seed</div>
+            <div class="legend" id="heroLegend"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+            <div class="eyebrow">Checks</div>
+            <div class="mono" id="checks" style="font-size:11.5px; line-height:1.7; color:#a6a1b8;"></div>
+        </div>
+    </div>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:12px;">
+    <div class="eyebrow">Seeded variation</div>
+    <div class="grid" id="grid"></div>
+</div>
+
+<script type="module">
+import {
+    CelestialGenerator, CelestialType,
+    GALAXY_BASINS, unitFromSeed, inclinationFor,
+} from '../dist/index.js';
+
+const SLOTS = CelestialGenerator.getColorSlots(CelestialType.Galaxy);
+const CELLS = 12;
+
+const heroGen = new CelestialGenerator();
+const gridGen = new CelestialGenerator();
+
+const hex = c => '#' + c.slice(0, 3)
+    .map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+
+// Mirrors pickBasin() in src/galaxy-palette.ts, for labelling only.
+function basinOf(seed) {
+    const u = unitFromSeed(seed, 13);
+    const total = GALAXY_BASINS.reduce((s, b) => s + b.weight, 0);
+    let acc = 0;
+    for (const b of GALAXY_BASINS) { acc += b.weight / total; if (u < acc) return b.name; }
+    return GALAXY_BASINS[GALAXY_BASINS.length - 1].name;
+}
+
+const $ = id => document.getElementById(id);
+const read = () => ({
+    seed: parseInt($('seed').value) || 9000,
+    variation: parseFloat($('variation').value),
+    inclMin: parseFloat($('inclMin').value),
+    inclMax: Math.max(parseFloat($('inclMin').value), parseFloat($('inclMax').value)),
+    speed: parseFloat($('speed').value),
+});
+
+// One display canvas per cell, blitted from the shared WebGL canvas — a
+// generator per cell would exhaust the browser's WebGL context limit.
+const cells = [];
+for (let i = 0; i < CELLS; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const swatches = document.createElement('div');
+    swatches.className = 'swatches';
+    swatches.innerHTML = SLOTS.map(() => '<i></i>').join('');
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerHTML = '<span></span><span></span>';
+    cell.append(canvas, swatches, meta);
+    $('grid').appendChild(cell);
+    cells.push({ ctx: canvas.getContext('2d'), swatches, meta });
+}
+
+function paintStatic() {
+    const p = read();
+    $('variationVal').textContent = p.variation.toFixed(2);
+    $('inclMinVal').textContent = p.inclMin + '°';
+    $('inclMaxVal').textContent = p.inclMax + '°';
+    $('speedVal').textContent = p.speed.toFixed(2);
+
+    const heroPalette = CelestialGenerator.getSeededPalette(CelestialType.Galaxy, p.seed, p.variation);
+    $('heroLegend').innerHTML = SLOTS
+        .map(s => `<div><i style="background:${hex(heroPalette[s])}"></i>${s} ${hex(heroPalette[s])}</div>`)
+        .join('');
+    $('heroSeed').textContent = 'seed ' + p.seed;
+    $('heroBasin').textContent = basinOf(p.seed);
+    $('heroIncl').textContent = 'inclination ' + inclinationFor(p.seed, p.inclMin, p.inclMax).toFixed(1) + '°';
+
+    // Sanity checks you can read without a reference image.
+    const atZero = CelestialGenerator.getSeededPalette(CelestialType.Galaxy, p.seed, 0);
+    const reference = CelestialGenerator.getDefaultPalette(CelestialType.Galaxy);
+    const exact = SLOTS.every(s => hex(atZero[s]) === hex(reference[s]));
+    const inRange = SLOTS.every(s => heroPalette[s].every(v => v >= 0 && v <= 1 && Number.isFinite(v)));
+    const tilts = Array.from({ length: 400 }, (_, i) => inclinationFor(p.seed + i, p.inclMin, p.inclMax));
+    const tiltOk = tilts.every(t => t >= p.inclMin - 1e-9 && t <= p.inclMax + 1e-9);
+    $('checks').innerHTML = [
+        `${exact ? '✓' : '✗'} colorVariation 0 == reference palette`,
+        `${inRange ? '✓' : '✗'} all channels finite and in [0,1]`,
+        `${tiltOk ? '✓' : '✗'} 400 seeds' inclination inside [${p.inclMin}°, ${p.inclMax}°]`,
+    ].join('<br>');
+
+    for (let i = 0; i < CELLS; i++) {
+        const seed = p.seed + (i + 1) * 1337;
+        const pal = CelestialGenerator.getSeededPalette(CelestialType.Galaxy, seed, p.variation);
+        [...cells[i].swatches.children].forEach((el, k) => { el.style.background = hex(pal[SLOTS[k]]); });
+        cells[i].meta.children[0].textContent = seed;
+        cells[i].meta.children[1].textContent = basinOf(seed);
+    }
+}
+
+let playing = true;
+let t0 = performance.now();
+let last = 0;
+
+function frame() {
+    requestAnimationFrame(frame);
+    const now = performance.now();
+    if (now - last < 33) return;
+    last = now;
+    if (!playing && last !== 0 && frame.drawn) return;
+    frame.drawn = true;
+
+    const p = read();
+    const time = playing ? (now - t0) / 1000 : 6.0;
+    const config = {
+        colorVariation: p.variation,
+        inclinationMin: p.inclMin,
+        inclinationMax: p.inclMax,
+    };
+
+    heroGen.render({ type: CelestialType.Galaxy, seed: p.seed, resolution: 512, timeSpeed: p.speed, config }, time);
+    const hctx = $('hero').getContext('2d');
+    hctx.clearRect(0, 0, 512, 512);
+    hctx.drawImage(heroGen.getCanvas(), 0, 0);
+
+    for (let i = 0; i < CELLS; i++) {
+        const seed = p.seed + (i + 1) * 1337;
+        gridGen.render({ type: CelestialType.Galaxy, seed, resolution: 256, timeSpeed: p.speed, config }, time);
+        cells[i].ctx.clearRect(0, 0, 256, 256);
+        cells[i].ctx.drawImage(gridGen.getCanvas(), 0, 0);
+    }
+}
+
+for (const id of ['seed', 'variation', 'inclMin', 'inclMax', 'speed']) {
+    $(id).addEventListener('input', () => { frame.drawn = false; paintStatic(); });
+}
+$('randomSeed').addEventListener('click', () => {
+    $('seed').value = Math.floor(Math.random() * 100000);
+    frame.drawn = false;
+    paintStatic();
+});
+$('toggle').addEventListener('click', () => {
+    playing = !playing;
+    frame.drawn = false;
+    $('toggle').textContent = playing ? 'Pause' : 'Play';
+    t0 = performance.now() - 6000;
+});
+
+paintStatic();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
