@@ -2,6 +2,7 @@ import type { RenderProfile } from '../types.js';
 import { CelestialType } from '../types.js';
 import { PALETTES, COLOR_SLOTS, LOOP_LCMS } from '../palettes.js';
 import { FRAG_GALAXY } from '../glsl/standalone/galaxy.glsl.js';
+import { galaxyPalette } from '../galaxy-palette.js';
 
 export const galaxyProfile: RenderProfile = {
   type: CelestialType.Galaxy,
@@ -9,7 +10,8 @@ export const galaxyProfile: RenderProfile = {
   uvScaling: 1.0,
   standaloneGlsl: FRAG_GALAXY,
   palette: PALETTES[CelestialType.Galaxy],
+  seededPalette: galaxyPalette,
   colorSlots: COLOR_SLOTS[CelestialType.Galaxy],
   loopLCM: LOOP_LCMS[CelestialType.Galaxy],
-  defaults: { inclinationMin: 12, inclinationMax: 74 },
+  defaults: { inclinationMin: 12, inclinationMax: 74, colorVariation: 0.35 },
 };
