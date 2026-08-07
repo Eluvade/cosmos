@@ -62,6 +62,21 @@ export interface CelestialConfig {
   flowOctaves: number;
   /** Flow layer noise scale (default 10). */
   flowScale: number;
+  /**
+   * Galaxy: explicit viewing inclination in degrees — 0 is face-on, ~80 is
+   * near edge-on. Overrides the seeded range when set.
+   */
+  inclinationDeg: number;
+  /** Galaxy: lower bound of the seed-derived inclination range (default 12). */
+  inclinationMin: number;
+  /** Galaxy: upper bound of the seed-derived inclination range (default 74). */
+  inclinationMax: number;
+  /**
+   * How far the palette may drift from the type's reference palette, [0, 1].
+   * 0 reproduces the reference exactly; 1 is the full seeded range.
+   * Only types whose profile defines `seededPalette` respond to this.
+   */
+  colorVariation: number;
 }
 
 /** How a render profile produces its shader. */
@@ -94,8 +109,13 @@ export interface RenderProfile {
   features?: BoundFeature[];
   /** For standalone mode: complete fragment shader main() body. */
   standaloneGlsl?: string;
-  /** Default color palette. */
+  /** Default color palette. Also the reference `seededPalette` varies from. */
   palette: Record<string, RGBA>;
+  /**
+   * Optional seeded palette derivation. When present and `colorVariation` is
+   * above 0, replaces `palette` as the base that user `colors` override.
+   */
+  seededPalette?: (seed: number, variation: number, base: Record<string, RGBA>) => Record<string, RGBA>;
   /** Ordered slot names mapping to u_col0..u_col15. */
   colorSlots: string[];
   /** Loop period LCM for seamless animation. */

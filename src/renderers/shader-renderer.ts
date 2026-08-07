@@ -4,7 +4,7 @@
 
 import type { CelestialParams, RenderProfile, RGBA } from '../types.js';
 import { CelestialType } from '../types.js';
-import { hashSeed } from '../seed.js';
+import { hashSeed, inclinationFor } from '../seed.js';
 import { createProgram } from '../webgl.js';
 import { composeShader, standaloneShader } from '../glsl/composer.js';
 import { VERT_SRC } from '../glsl/header.glsl.js';
@@ -25,6 +25,7 @@ export class ShaderRenderer {
   private programs: Map<CelestialType, ProgramCache> = new Map();
   private noiseTexture: WebGLTexture | null = null;
   private fallbackTexture: WebGLTexture;
+  private paletteCache: Map<string, Record<string, RGBA>> = new Map();
 
   constructor(gl: WebGLRenderingContext, quadVBO: WebGLBuffer, fallbackTexture: WebGLTexture) {
     this.gl = gl;
@@ -79,9 +80,16 @@ export class ShaderRenderer {
       this.setUniform1f(cache, `u_seed${i}`, hashSeed(seed, i));
     }
 
+    // Inclination — cos(tilt) for disc types. A no-op for profiles whose
+    // shader never declares u_incl, since setUniform1f skips null locations.
+    const config = { ...profile.defaults, ...params.config };
+    const inclDeg = config.inclinationDeg
+      ?? inclinationFor(seed, config.inclinationMin ?? 0, config.inclinationMax ?? 0);
+    this.setUniform1f(cache, 'u_incl', Math.cos(inclDeg * Math.PI / 180));
+
     // Color uniforms
     const slots = profile.colorSlots;
-    const palette = profile.palette;
+    const palette = this.resolvePalette(profile, seed, config.colorVariation ?? 0);
     const userColors = params.colors || {};
     for (let i = 0; i < 16; i++) {
       const slotName = slots[i];
@@ -114,9 +122,32 @@ export class ShaderRenderer {
     const gl = this.gl;
     this.programs.forEach(c => gl.deleteProgram(c.prog));
     this.programs.clear();
+    this.paletteCache.clear();
   }
 
   // --- Private ---
+
+  /**
+   * Resolve the base palette, deriving a seeded one where the profile offers.
+   * Cached because animation re-renders the same seed every frame and the
+   * derivation runs a gamut search per slot.
+   */
+  private resolvePalette(
+    profile: RenderProfile,
+    seed: number,
+    variation: number,
+  ): Record<string, RGBA> {
+    if (!profile.seededPalette || !(variation > 0)) return profile.palette;
+
+    const key = `${profile.type}|${seed}|${variation}`;
+    let palette = this.paletteCache.get(key);
+    if (!palette) {
+      palette = profile.seededPalette(seed, variation, profile.palette);
+      if (this.paletteCache.size >= 128) this.paletteCache.clear();
+      this.paletteCache.set(key, palette);
+    }
+    return palette;
+  }
 
   private getOrBuild(profile: RenderProfile): ProgramCache {
     let cache = this.programs.get(profile.type);
