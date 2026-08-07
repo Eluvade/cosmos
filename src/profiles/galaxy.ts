@@ -11,5 +11,5 @@ export const galaxyProfile: RenderProfile = {
   palette: PALETTES[CelestialType.Galaxy],
   colorSlots: COLOR_SLOTS[CelestialType.Galaxy],
   loopLCM: LOOP_LCMS[CelestialType.Galaxy],
-  defaults: {},
+  defaults: { inclinationMin: 12, inclinationMax: 74 },
 };

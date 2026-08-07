@@ -56,7 +56,10 @@ export const PALETTES: Record<string, Record<string, RGBA>> = {
     rim: [1.000, 0.816, 0.694, 1], inset: [0.867, 0.686, 0.765, 1],
   },
   [CelestialType.Galaxy]: {
-    core: [1.000, 0.960, 0.800, 1], arm1: [0.400, 0.500, 0.900, 1], arm2: [0.300, 0.350, 0.700, 1], dust: [0.150, 0.100, 0.200, 1],
+    core: [1.000, 0.972, 0.898, 1], bulge: [1.000, 0.839, 0.573, 1],
+    arm1: [0.784, 0.867, 1.000, 1], arm2: [0.396, 0.545, 0.878, 1],
+    knot: [1.000, 0.541, 0.616, 1], dust: [0.180, 0.106, 0.129, 1],
+    halo: [0.318, 0.294, 0.514, 1],
   },
 };
 
@@ -72,7 +75,7 @@ export const COLOR_SLOTS: Record<string, string[]> = {
   [CelestialType.Ice]: ['base1','base2','base3','lake1','lake2','lake3','cloud1','cloud2','cloud3','cloud4'],
   [CelestialType.Star]: ['star1','star2','star3','star4','blob','glow'],
   [CelestialType.BlackHole]: ['glow1','glow2','glow3','glow4','purple','rim','inset'],
-  [CelestialType.Galaxy]: ['core','arm1','arm2','dust'],
+  [CelestialType.Galaxy]: ['core','bulge','arm1','arm2','knot','dust','halo'],
 };
 
 /** Loop period LCMs (noise wrap sizes across all layers) for seamless animation. */
