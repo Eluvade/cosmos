@@ -46,7 +46,6 @@ export const PALETTES: Record<string, Record<string, RGBA>> = {
   },
   [CelestialType.Star]: {
     star1: [1.000, 0.950, 0.500, 1], star2: [1.000, 0.700, 0.200, 1], star3: [0.900, 0.350, 0.100, 1], star4: [0.600, 0.150, 0.050, 1],
-    blob: [1.000, 0.647, 0.000, 1.000],
     glow: [1.000, 0.600, 0.150, 1.000],
   },
   [CelestialType.BlackHole]: {
@@ -73,7 +72,7 @@ export const COLOR_SLOTS: Record<string, string[]> = {
   [CelestialType.GasGiantRinged]: ['gas1','gas2','gas3','gas4','gas_dark1','gas_dark2','gas_dark3','gas_dark4','ring1','ring2','ring3','ring4'],
   [CelestialType.Molten]: ['base1','base2','base3','crater1','crater2','river1','river2','river3'],
   [CelestialType.Ice]: ['base1','base2','base3','lake1','lake2','lake3','cloud1','cloud2','cloud3','cloud4'],
-  [CelestialType.Star]: ['star1','star2','star3','star4','blob','glow'],
+  [CelestialType.Star]: ['star1','star2','star3','star4','glow'],
   [CelestialType.BlackHole]: ['glow1','glow2','glow3','glow4','purple','rim','inset'],
   [CelestialType.Galaxy]: ['core','bulge','arm1','arm2','knot','dust','halo'],
 };

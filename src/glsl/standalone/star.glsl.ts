@@ -1,6 +1,9 @@
 // ============================================================================
-// Standalone Shader: Star — multi-layer stellar surface with glow and rays
-// 6 interdependent layers, not decomposable.
+// Standalone Shader: Star — granulated photosphere, corona, prominences
+//
+// Corona is two inverse-power terms in stellar radii, with equatorial
+// streamers, plumes and threading. Colour comes from the seeded spectral
+// class; see src/star-palette.ts.
 // ============================================================================
 
 export const FRAG_STAR = `
@@ -13,75 +16,97 @@ void main() {
     float d_circle = length(centered);
     float angle = atan(centered.y, centered.x);
 
-    // Body is shrunk so glow + rays fit inside the canvas
+    // Body is shrunk so the corona and prominences fit inside the canvas.
     float body_r = 0.28;
-    float canvas_edge = 0.48;
+    float canvas_edge = 0.50;
 
-    // Remap UVs so body fills the same [0,0.5] normalized space
+    // Remap UVs so the body fills the same [0,0.5] normalized space.
     vec2 s_uv = centered / (body_r * 2.0) + 0.5;
     float s_d = distance(s_uv, vec2(0.5));
-
-    // === RADIAL GLOW ===
-    float glow_pulse = 1.0 + 0.12 * sin(t) + 0.06 * sin(t * 2.15);
-    float glow_a = smoothstep(canvas_edge, body_r * 0.5, d_circle) * 0.55 * glow_pulse;
-    float glow_noise = fbm_s(uv * 4.0 + vec2(t * 0.1, t * 0.075), 3, u_seed5, 4.0);
-    glow_a *= 0.7 + glow_noise * 0.4;
-    vec4 result = vec4(u_col5.rgb, glow_a * u_col5.a);
-
-    // === RAYS ===
     float ang01 = angle / 6.2832 + 0.5;
-    float ray_seed = noise_s(vec2(ang01 * 3.0, t * 0.15), u_seed6, 3.0);
-    float ray_w1 = sin(angle * 8.0 + ray_seed * 6.0 + t * 0.5);
-    ray_w1 = pow(max(ray_w1, 0.0), 3.0);
-    float ray_w2 = sin(angle * 16.0 - ray_seed * 4.0 - t * 0.3);
-    ray_w2 = pow(max(ray_w2, 0.0), 4.0) * 0.4;
-    float ray_intensity = ray_w1 + ray_w2;
+    float glow_pulse = 1.0 + 0.12 * sin(t) + 0.06 * sin(t * 2.15);
 
-    float ray_reach = body_r + ray_intensity * (canvas_edge - body_r);
-    float ray_a = smoothstep(ray_reach, ray_reach - 0.03, d_circle)
-                * smoothstep(body_r - 0.01, body_r + 0.02, d_circle);
-    ray_a *= 1.0 - smoothstep(body_r, ray_reach, d_circle) * 0.6;
-    ray_a *= 0.5 * glow_pulse;
-    result = alphaBlend(result, vec4(u_col5.rgb, ray_a * u_col5.a));
+    // === CORONA ===
+    // Measured in stellar radii, the way coronal brightness is actually
+    // described. Two inverse-power terms: a very steep one that dies within a
+    // fraction of a radius (the bright ring hugging the limb) and a shallow
+    // one that carries a faint tail outward. A single mid exponent gives the
+    // flat, painted-on halo — the sum is what makes it read as light.
+    // x >= 1 by construction, so the negative exponents never see a base
+    // below zero, which would be undefined in GLSL ES 1.0.
+    float x = max(d_circle / body_r, 1.0);
+    float near = pow(x, -7.0);
+    float far  = pow(x, -2.3);
 
-    // === THIN BRIGHT LINES ===
-    float line_seed = noise_s(vec2(ang01 * 5.0, t * 0.2), u_seed6, 5.0);
-    float line_w1 = sin(angle * 12.0 + line_seed * 8.0 + t * 0.7);
-    line_w1 = pow(max(line_w1, 0.0), 12.0);
-    float line_w2 = sin(angle * 24.0 - line_seed * 5.0 + t * 0.4);
-    line_w2 = pow(max(line_w2, 0.0), 16.0) * 0.6;
-    float line_intensity = line_w1 + line_w2;
+    // Streamers are denser near the magnetic equator and open into shorter
+    // brushes at the poles, so the corona is wider than it is tall.
+    float tiltA = u_seed2 * 0.0628;
+    float eq = 1.0 - 0.42 * abs(sin(angle - tiltA));
 
-    float line_reach = body_r + line_intensity * (canvas_edge - body_r);
-    float line_a = smoothstep(line_reach, line_reach - 0.01, d_circle)
-                 * smoothstep(body_r - 0.005, body_r + 0.01, d_circle);
-    line_a *= 1.0 - smoothstep(body_r, line_reach, d_circle) * 0.4;
-    line_a *= 0.85;
-    vec3 line_col = mix(u_col5.rgb, u_col0.rgb, 0.7);
-    result = alphaBlend(result, vec4(line_col, line_a));
+    // Low-frequency angular structure: a few wide plumes, not many thin spikes.
+    // It modulates only the far term, so the limb ring stays smooth and
+    // unbroken and the structure appears as you move outward.
+    float s1 = fbm_s(vec2(ang01 * 4.0, t * 0.03), 4, u_seed5, 4.0);
+    float s2 = fbm_s(vec2(ang01 * 11.0, t * 0.05), 3, u_seed6, 11.0);
+    float plume = 0.45 + 1.25 * pow(clamp(s1 * 1.25 + s2 * 0.4, 0.0, 1.0), 1.6);
 
-    // === BLOB LAYER (corona) ===
-    float blob_scale = 1.4;
-    vec2 blob_uv = (s_uv - 0.5) / blob_scale + 0.5;
-    vec2 blob_rot = rotate2d(blob_uv, u_rotation);
-    float blob_angle = atan(blob_rot.x - 0.5, blob_rot.y - 0.5);
-    float blob_d = distance(blob_uv, vec2(0.5));
+    // Faint radial threading, strongest far out where the plumes live.
+    float thread = fbm_s(vec2(ang01 * 55.0, d_circle * 1.6 - t * 0.04), 2, u_seed6, 55.0);
+    float threading = 0.80 + 0.40 * thread;
 
-    float blob_sz = 4.0;
-    float blob_c = 0.0;
-    for (int i = 0; i < 15; i++) {
-        float r = rand_s(vec2(float(i)), u_seed3, blob_sz);
-        vec2 circleUV = vec2(blob_d, blob_angle);
-        blob_c += circlePattern(circleUV * blob_sz + t * 0.5 - (1.0 / max(blob_d, 0.01)) * 0.1 + r, 3.0, 1.5, u_seed3, blob_sz);
+    float corona = near * 0.55 + far * eq * plume * threading * 0.42;
+    // The frame is square; without this the faint tail would clip as a box.
+    corona *= smoothstep(canvas_edge, canvas_edge * 0.72, d_circle);
+    corona *= glow_pulse;
+
+    // Hot and dense at the limb, thinning to the pale glow slot outward.
+    vec3 cor_col = mix(u_col4.rgb, u_col0.rgb, clamp(near * 2.2, 0.0, 1.0));
+    vec4 result = vec4(cor_col, clamp(corona, 0.0, 1.0) * 0.85 * u_col4.a);
+
+    // === SPICULES ===
+    // A fur of short jets standing on the limb, only a few pixels deep. Both
+    // octaves wrap on themselves around the circle (85 against a wrap size of
+    // 85, 20 against 20), so there is no seam.
+    float sp_hi = fbm_s(vec2(ang01 * 85.0, t * 0.10), 2, u_seed6, 85.0);
+    float sp_lo = fbm_s(vec2(ang01 * 20.0, t * 0.06), 3, u_seed6, 20.0);
+    float sp_len = 0.005 + 0.024 * sp_hi * (0.4 + sp_lo);
+    float sp_a = smoothstep(body_r + sp_len, body_r, d_circle) * step(body_r - 0.004, d_circle);
+    result = alphaBlend(result, vec4(u_col1.rgb, sp_a * 0.85));
+
+    // === PROMINENCES ===
+    // Five loops. Each is an arc of a circle whose centre sits just outside
+    // the limb, so the loop rises, curves over and comes back down.
+    float prom = 0.0;
+    float prom_hot = 0.0;
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        float ha = rand_s(vec2(fi, 3.0), u_seed3, 8.0);
+        float hs = rand_s(vec2(fi, 9.0), u_seed3, 8.0);
+        float hl = rand_s(vec2(fi, 5.0), u_seed3, 8.0);
+        // Slow drift + a per-loop life cycle so they grow and fade, not blink.
+        float pa = (ha + t * 0.012 + fi * 0.2) * 6.2832;
+        float life = 0.5 - 0.5 * cos((t * 0.16 + hs) * 6.2832);
+        float rad = (0.032 + 0.070 * hl) * (0.35 + 0.65 * life);
+        vec2 c = vec2(cos(pa), sin(pa)) * (body_r * 0.96);
+        float dl = abs(length(centered - c) - rad);
+        float thick = 0.006 + 0.010 * hl;
+        // Anchored ON the limb, so only the outer half of the ring survives the
+        // clip and it reads as an arc rising from the surface, not a bubble.
+        float outside = step(body_r, d_circle);
+        float band = smoothstep(thick, thick * 0.25, dl) * outside;
+        prom = max(prom, band * (0.45 + 0.55 * life));
+        prom_hot = max(prom_hot, smoothstep(thick * 0.5, 0.0, dl) * outside * life);
     }
-    blob_c *= 0.37 - blob_d;
-    blob_c = step(0.07, blob_c - blob_d);
-    blob_c *= step(d_circle, canvas_edge);
+    // Prominences are cool, dense plasma seen against the corona: red, not white.
+    result = alphaBlend(result, vec4(u_col2.rgb, prom * 0.95));
+    result = alphaBlend(result, vec4(u_col1.rgb, prom_hot * 0.55));
 
-    vec4 blob_col = u_col4;
-    result = alphaBlend(result, vec4(blob_col.rgb, blob_c * blob_col.a));
+    // === CHROMOSPHERE ===
+    float rim_a = smoothstep(body_r + 0.007, body_r + 0.002, d_circle)
+                * smoothstep(body_r - 0.005, body_r - 0.001, d_circle);
+    result = alphaBlend(result, vec4(u_col0.rgb, rim_a * 0.8));
 
-    // === STAR SURFACE (voronoi) ===
+    // === STAR SURFACE (voronoi granulation) ===
     float star_a = step(d_circle, body_r);
     vec2 star_pix = rotate2d(s_uv, u_rotation);
     star_pix = spherify(star_pix);
@@ -93,17 +118,23 @@ void main() {
 
     float interp = floor(n * 3.0) / 3.0;
     vec4 star_col = sampleRamp4(interp, u_col0, u_col1, u_col2, u_col3);
+    float limb = 1.0 - 0.62 * pow(clamp(s_d / 0.5, 0.0, 1.0), 2.6);
+    star_col.rgb = mix(u_col3.rgb, star_col.rgb, limb);
     result = alphaBlend(result, vec4(star_col.rgb, star_a * star_col.a));
 
     // === FLARE LAYER ===
     float flare_scale = 1.2;
     vec2 flare_uv = (s_uv - 0.5) / flare_scale + 0.5;
-    vec2 flare_rot = rotate2d(flare_uv, u_rotation);
-    float flare_angle = atan(flare_rot.x - 0.5, flare_rot.y - 0.5) * 0.4;
     float flare_d = distance(flare_uv, vec2(0.5));
-
     float flare_sz = 2.0;
-    vec2 flare_circleUV = vec2(flare_d, flare_angle);
+
+    // Angle as a fraction of a turn, scaled so one full turn spans exactly
+    // flare_sz — the wrap period of rand_s. Feeding a raw atan() in leaves the
+    // branch cut at +/-pi in a different hash cell from its own neighbour, and
+    // the pattern discontinues along that radius.
+    float flare_turn = fract((angle - u_rotation) / 6.2832 + 0.5) * flare_sz;
+    vec2 flare_circleUV = vec2(flare_d, flare_turn);
+
     float fn = fbm_s(flare_circleUV * flare_sz + t * 0.5, 4, u_seed4, flare_sz);
     float fnc = circlePattern(flare_circleUV * 1.0 + t * 0.5 + fn, 2.0, 1.0, u_seed4, flare_sz);
     fnc *= 1.5;
