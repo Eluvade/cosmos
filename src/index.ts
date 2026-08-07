@@ -279,6 +279,30 @@ export class CelestialGenerator {
   }
 
   /**
+   * Get the palette a given seed actually renders with.
+   *
+   * For types with a seeded palette model (currently Galaxy) this is what
+   * `render()` uses as the base before your `colors` overrides apply. For
+   * every other type, and at `variation` 0, it equals `getDefaultPalette`.
+   *
+   * @param type      Celestial type.
+   * @param seed      Base seed.
+   * @param variation Drift from the reference palette, [0, 1].
+   *                  Omit to use the type's default.
+   */
+  static getSeededPalette(
+    type: CelestialType,
+    seed: number,
+    variation?: number,
+  ): Record<string, RGBA> {
+    const profile = PROFILES[type];
+    if (!profile) throw new Error(`Unknown celestial type: ${type}`);
+    const v = variation ?? profile.defaults.colorVariation ?? 0;
+    if (!profile.seededPalette || !(v > 0)) return { ...profile.palette };
+    return profile.seededPalette(seed, v, profile.palette);
+  }
+
+  /**
    * Release all WebGL resources.
    * Call when the generator is no longer needed.
    */
@@ -299,3 +323,7 @@ export class CelestialGenerator {
 export { CelestialType } from './types.js';
 export type { CelestialParams, CelestialConfig, RGBA, RGB, NebulaColors } from './types.js';
 export { renderNebula } from './renderers/nebula.js';
+export { hashSeed, inclinationFor, unitFromSeed } from './seed.js';
+export { galaxyPalette, GALAXY_BASINS, type HueBasin } from './galaxy-palette.js';
+export { starPalette, starClassFor, starTemperature, STAR_CLASSES, type StarClass } from './star-palette.js';
+export { srgbToOklch, oklchToSrgb, mixOklab, blackbodyToSrgb, type OKLCh } from './color.js';
